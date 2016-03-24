@@ -2,6 +2,8 @@ package com.example.kulbir.wifianalyzer;
 
 
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import android.app.Activity;
@@ -12,6 +14,7 @@ import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AbsListView;
@@ -80,13 +83,33 @@ public class MainActivity extends Activity {
         tableRow.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.FILL_PARENT,
                 AbsListView.LayoutParams.WRAP_CONTENT));
 
+        double level = scanResult.level;
+        double freq = scanResult.frequency;
+
         sb.append("SSID: " + scanResult.SSID + "\n");
-        sb.append("Frequency: " + scanResult.frequency + "\n");
-        sb.append("Level: " + scanResult.level + "dBm\n");
+        sb.append("Frequency: " + freq + "\n");
+        sb.append("Level: " + level + "dBm\n");
+        sb.append("Channel: " + convertFrequencyToChannel(scanResult.frequency) + "\n");
+        sb.append("Distance: " + calculateDistance(level, freq) + "\n");
 
         tempTextView.setText(sb);
         tableRow.addView(tempTextView);
         table.addView(tableRow);
+    }
+
+    public static int convertFrequencyToChannel(int freq) {
+        if (freq >= 2412 && freq <= 2484) {
+            return (freq - 2412) / 5 + 1;
+        } else if (freq >= 5170 && freq <= 5825) {
+            return (freq - 5170) / 5 + 34;
+        } else {
+            return -1;
+        }
+    }
+
+    public double calculateDistance(double levelInDb, double freqInMHz)    {
+        double exp = (27.55 - (20 * Math.log10(freqInMHz)) + Math.abs(levelInDb)) / 20.0;
+        return Math.pow(10.0, exp);
     }
 
     // Broadcast receiver class called its receive method
@@ -99,7 +122,19 @@ public class MainActivity extends Activity {
             sb = new StringBuilder();
             wifiList = mainWifi.getScanResults();
 
+            Collections.sort(wifiList, new Comparator<ScanResult>() {
+                @Override
+                public int compare(ScanResult lhs, ScanResult rhs) {
+
+                    double lhsDistance = calculateDistance(lhs.level, lhs.frequency);
+                    double rhsDistance = calculateDistance(rhs.level, rhs.frequency);
+
+                    return lhsDistance < rhsDistance ? -1 : (lhsDistance < rhsDistance ) ? 1 : 0;
+                }
+            });
+
             for (ScanResult scanResult : wifiList) {
+                Log.d("ScanResult", scanResult.toString());
                 addTableRow(scanResult);
             }
             mainText.setText("");
