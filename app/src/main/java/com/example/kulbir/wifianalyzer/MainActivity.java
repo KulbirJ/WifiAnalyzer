@@ -14,11 +14,15 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AbsListView;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
     TextView mainText;
+    TableLayout table;
     WifiManager mainWifi;
     WifiReceiver receiverWifi;
     List<ScanResult> wifiList;
@@ -30,6 +34,8 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         mainText = (TextView) findViewById(R.id.listview);
         mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        table = (TableLayout) findViewById(R.id.table);
+
         if (mainWifi.isWifiEnabled() == false)
         {
             // If wifi disabled then enable it
@@ -65,6 +71,24 @@ public class MainActivity extends Activity {
         super.onResume();
     }
 
+    protected void addTableRow(ScanResult scanResult) {
+        TableRow tableRow = new TableRow(this);
+        TextView tempTextView = new TextView(this);
+
+        StringBuilder sb = new StringBuilder();
+
+        tableRow.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.FILL_PARENT,
+                AbsListView.LayoutParams.WRAP_CONTENT));
+
+        sb.append("SSID: " + scanResult.SSID + "\n");
+        sb.append("Frequency: " + scanResult.frequency + "\n");
+        sb.append("Level: " + scanResult.level + "dBm\n");
+
+        tempTextView.setText(sb);
+        tableRow.addView(tempTextView);
+        table.addView(tableRow);
+    }
+
     // Broadcast receiver class called its receive method
     // when number of wifi connections changed
 
@@ -72,19 +96,13 @@ public class MainActivity extends Activity {
 
         // This method call when number of wifi connections changed
         public void onReceive(Context c, Intent intent) {
-
             sb = new StringBuilder();
             wifiList = mainWifi.getScanResults();
-            sb.append("\n        Number Of Wifi connections :"+wifiList.size()+"\n\n");
 
-            for(int i = 0; i < wifiList.size(); i++){
-
-                sb.append(new Integer(i+1).toString() + ". ");
-                sb.append((wifiList.get(i)).toString());
-                sb.append("\n\n");
+            for (ScanResult scanResult : wifiList) {
+                addTableRow(scanResult);
             }
-
-            mainText.setText(sb);
+            mainText.setText("");
         }
 
     }
