@@ -26,12 +26,19 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.series.BarGraphSeries;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
+import com.jjoe64.graphview.series.PointsGraphSeries;
+
 public class MainActivity extends Activity {
     TextView mainText;
     TableLayout table;
     WifiManager mainWifi;
     WifiReceiver receiverWifi;
     List<ScanResult> wifiList;
+    GraphView twoGhzGraph;
     StringBuilder sb = new StringBuilder();
 
     int[] twoGhzChannels = new int[14];
@@ -44,6 +51,7 @@ public class MainActivity extends Activity {
         mainText = (TextView) findViewById(R.id.listview);
         mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         table = (TableLayout) findViewById(R.id.table);
+        twoGhzGraph = (GraphView) findViewById(R.id.graph);
 
         if (mainWifi.isWifiEnabled() == false)
         {
@@ -89,16 +97,27 @@ public class MainActivity extends Activity {
         tableRow.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.FILL_PARENT,
                 AbsListView.LayoutParams.WRAP_CONTENT));
 
+
+
+
+
         double level = scanResult.level;
         double freq = scanResult.frequency;
+        int channel = convertFrequencyToChannel(scanResult.frequency);
 
         sb.append("SSID: " + scanResult.SSID + "\n");
         sb.append("Frequency: " + freq + "\n");
         sb.append("Level: " + level + "dBm\n");
-        sb.append("Channel: " + convertFrequencyToChannel(scanResult.frequency) + "\n");
+        sb.append("Channel: " + channel + "\n");
         sb.append("Distance: " + calculateDistance(level, freq) + "\n");
 
+        PointsGraphSeries<DataPoint> series = new PointsGraphSeries<DataPoint>(new DataPoint[] {
+                new DataPoint(channel, level)
+        });
+        twoGhzGraph.addSeries(series);
+
         tempTextView.setText(sb);
+
         tableRow.addView(tempTextView);
         table.addView(tableRow);
     }
@@ -195,6 +214,7 @@ public class MainActivity extends Activity {
         // This method call when number of wifi connections changed
         public void onReceive(Context c, Intent intent) {
             table.removeAllViews();
+            twoGhzGraph.removeAllSeries();
             resetTwoGhzChannelCount();
             resetFiveGhzChannelCount();
 
@@ -217,7 +237,9 @@ public class MainActivity extends Activity {
                 Log.d("ScanResult", scanResult.toString());
                 addTableRow(scanResult);
             }
+
             displayBestChannels();
+
             for(int i=0; i<14; i++) {
                 Log.d("2GHz Channel " + (i + 1), Integer.toString(twoGhzChannels[i]));
             }

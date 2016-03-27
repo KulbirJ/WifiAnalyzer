@@ -16,15 +16,23 @@
         android:layout_height="wrap_content"
         android:id="@+id/scrollView" >
 
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
         <TableLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/green"
             android:layout_gravity="center_horizontal"
             android:id="@+id/table">
-
-
         </TableLayout>
+        <com.jjoe64.graphview.GraphView
+            android:layout_width="match_parent"
+            android:layout_height="200dip"
+            android:id="@+id/graph" />
+
+        </LinearLayout>
     </ScrollView>
 
 </LinearLayout>
