@@ -97,10 +97,6 @@ public class MainActivity extends Activity {
         tableRow.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.FILL_PARENT,
                 AbsListView.LayoutParams.WRAP_CONTENT));
 
-
-
-
-
         double level = scanResult.level;
         double freq = scanResult.frequency;
         int channel = convertFrequencyToChannel(scanResult.frequency);
@@ -111,8 +107,12 @@ public class MainActivity extends Activity {
         sb.append("Channel: " + channel + "\n");
         sb.append("Distance: " + calculateDistance(level, freq) + "\n");
 
-        PointsGraphSeries<DataPoint> series = new PointsGraphSeries<DataPoint>(new DataPoint[] {
-                new DataPoint(channel, level)
+        LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(new DataPoint[] {
+                new DataPoint(channel - 2, -100),
+                new DataPoint(channel - 1, (-100 + level)/2.0),
+                new DataPoint(channel, level),
+                new DataPoint(channel + 1, (-100 + level)/2.0),
+                new DataPoint(channel + 2, -100)
         });
         twoGhzGraph.addSeries(series);
 
