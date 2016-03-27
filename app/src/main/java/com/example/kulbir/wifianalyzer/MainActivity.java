@@ -45,7 +45,7 @@ public class MainActivity extends Activity {
         mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         table = (TableLayout) findViewById(R.id.table);
 
-        if (!mainWifi.isWifiEnabled())
+        if (mainWifi.isWifiEnabled() == false)
         {
             // If wifi disabled then enable it
             Toast.makeText(getApplicationContext(), "wifi is disabled..making it enabled",
@@ -102,13 +102,29 @@ public class MainActivity extends Activity {
         tableRow.addView(tempTextView);
         table.addView(tableRow);
     }
+
+    public int convertFrequencyToChannel(int freq) {
+        int channel = -1;
+        if (freq >= 2412 && freq <= 2484) {
+            channel = (freq - 2412) / 5 + 1;
+            twoGhzChannels[channel - 1]++;
+        } else if (freq >= 5170 && freq <= 5825) {
+            channel = (freq - 5170) / 5 + 34;
+            if(fiveGhzChannels.indexOfKey(channel) < 0) {
+                fiveGhzChannels.put(channel, 1);
+            } else {
+                int channelCount = fiveGhzChannels.get(channel) + 1;
+                fiveGhzChannels.put(channel, channelCount);
+            }
+        }
+        return channel;
+    }
+
     private void getCurrentSSID(Context context) {
         StringBuilder CurrentSSID = new StringBuilder();
         TableRow tableRow = new TableRow(this);
         TextView tempTextView = new TextView(this);
 
-    public int convertFrequencyToChannel(int freq) {
-        int channel = -1;
         try {
             WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 
@@ -130,21 +146,6 @@ public class MainActivity extends Activity {
             e.printStackTrace();
 
         }
-    }
-    public static int convertFrequencyToChannel(int freq) {
-        if (freq >= 2412 && freq <= 2484) {
-            channel = (freq - 2412) / 5 + 1;
-            twoGhzChannels[channel - 1]++;
-        } else if (freq >= 5170 && freq <= 5825) {
-            channel = (freq - 5170) / 5 + 34;
-            if(fiveGhzChannels.indexOfKey(channel) < 0) {
-                fiveGhzChannels.put(channel, 1);
-            } else {
-                int channelCount = fiveGhzChannels.get(channel) + 1;
-                fiveGhzChannels.put(channel, channelCount);
-            }
-        }
-        return channel;
     }
 
     public double calculateDistance(double levelInDb, double freqInMHz)    {
@@ -169,16 +170,16 @@ public class MainActivity extends Activity {
         if(twoGhzChannels[bestTwoGhzChannel] > twoGhzChannels[5]) {
             bestTwoGhzChannel = 5;
         }
-        if(twoGhzChannels[bestTwoGhzChannel] > twoGhzChannels[10]) {
+        if (twoGhzChannels[bestTwoGhzChannel] > twoGhzChannels[10]) {
             bestTwoGhzChannel = 10;
         }
 
-        if(fiveGhzChannels.size() == 0) {
+        if (fiveGhzChannels.size() == 0) {
             mainText.setText("5GHz: N/A         2GHz: " + Integer.toString(bestTwoGhzChannel + 1));
         } else {
             bestFiveGhzChannel = 0;
-            for(int i=1; i<fiveGhzChannels.size(); i++) {
-                if(fiveGhzChannels.get(bestFiveGhzChannel) > fiveGhzChannels.get(i)) {
+            for (int i = 1; i < fiveGhzChannels.size(); i++) {
+                if (fiveGhzChannels.get(bestFiveGhzChannel) > fiveGhzChannels.get(i)) {
                     bestFiveGhzChannel = i;
                 }
             }
@@ -209,7 +210,9 @@ public class MainActivity extends Activity {
                     return lhsDistance < rhsDistance ? -1 : (lhsDistance < rhsDistance) ? 1 : 0;
                 }
             });
+
             getCurrentSSID(c);
+
             for (ScanResult scanResult : wifiList) {
                 Log.d("ScanResult", scanResult.toString());
                 addTableRow(scanResult);
