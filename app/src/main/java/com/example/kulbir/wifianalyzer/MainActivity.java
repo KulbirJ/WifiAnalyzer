@@ -15,6 +15,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.SparseIntArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AbsListView;
@@ -31,6 +32,9 @@ public class MainActivity extends Activity {
     List<ScanResult> wifiList;
     StringBuilder sb = new StringBuilder();
 
+    int[] twoGhzChannels = new int[14];
+    SparseIntArray fiveGhzChannels;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,7 +43,7 @@ public class MainActivity extends Activity {
         mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         table = (TableLayout) findViewById(R.id.table);
 
-        if (mainWifi.isWifiEnabled() == false)
+        if (!mainWifi.isWifiEnabled())
         {
             // If wifi disabled then enable it
             Toast.makeText(getApplicationContext(), "wifi is disabled..making it enabled",
@@ -97,14 +101,21 @@ public class MainActivity extends Activity {
         table.addView(tableRow);
     }
 
-    public static int convertFrequencyToChannel(int freq) {
+    public int convertFrequencyToChannel(int freq) {
+        int channel = -1;
         if (freq >= 2412 && freq <= 2484) {
-            return (freq - 2412) / 5 + 1;
+            channel = (freq - 2412) / 5 + 1;
+            twoGhzChannels[channel - 1]++;
         } else if (freq >= 5170 && freq <= 5825) {
-            return (freq - 5170) / 5 + 34;
-        } else {
-            return -1;
+            channel = (freq - 5170) / 5 + 34;
+            if(fiveGhzChannels.indexOfKey(channel) < 0) {
+                fiveGhzChannels.put(channel, 1);
+            } else {
+                int channelCount = fiveGhzChannels.get(channel) + 1;
+                fiveGhzChannels.put(channel, channelCount);
+            }
         }
+        return channel;
     }
 
     public double calculateDistance(double levelInDb, double freqInMHz)    {
@@ -112,14 +123,51 @@ public class MainActivity extends Activity {
         return Math.pow(10.0, exp);
     }
 
+    public void resetTwoGhzChannelCount() {
+        for(int i=0; i<14; i++) {
+            twoGhzChannels[i] = 0;
+        }
+    }
+
+    public void resetFiveGhzChannelCount() {
+        fiveGhzChannels = new SparseIntArray();
+    }
+
+    public void displayBestChannels() {
+        int bestTwoGhzChannel = 0;
+        int bestFiveGhzChannel;
+
+        if(twoGhzChannels[bestTwoGhzChannel] > twoGhzChannels[5]) {
+            bestTwoGhzChannel = 5;
+        }
+        if(twoGhzChannels[bestTwoGhzChannel] > twoGhzChannels[10]) {
+            bestTwoGhzChannel = 10;
+        }
+
+        if(fiveGhzChannels.size() == 0) {
+            mainText.setText("5GHz: N/A         2GHz: " + Integer.toString(bestTwoGhzChannel + 1));
+        } else {
+            bestFiveGhzChannel = 0;
+            for(int i=1; i<fiveGhzChannels.size(); i++) {
+                if(fiveGhzChannels.get(bestFiveGhzChannel) > fiveGhzChannels.get(i)) {
+                    bestFiveGhzChannel = i;
+                }
+            }
+            mainText.setText("5GHz: " + Integer.toString(fiveGhzChannels.keyAt(bestFiveGhzChannel))
+                    + "   2GHz: " + Integer.toString(bestTwoGhzChannel + 1));
+        }
+    }
+
     // Broadcast receiver class called its receive method
     // when number of wifi connections changed
-
     class WifiReceiver extends BroadcastReceiver {
 
         // This method call when number of wifi connections changed
         public void onReceive(Context c, Intent intent) {
-            sb = new StringBuilder();
+            table.removeAllViews();
+            resetTwoGhzChannelCount();
+            resetFiveGhzChannelCount();
+
             wifiList = mainWifi.getScanResults();
 
             Collections.sort(wifiList, new Comparator<ScanResult>() {
@@ -129,7 +177,7 @@ public class MainActivity extends Activity {
                     double lhsDistance = calculateDistance(lhs.level, lhs.frequency);
                     double rhsDistance = calculateDistance(rhs.level, rhs.frequency);
 
-                    return lhsDistance < rhsDistance ? -1 : (lhsDistance < rhsDistance ) ? 1 : 0;
+                    return lhsDistance < rhsDistance ? -1 : (lhsDistance < rhsDistance) ? 1 : 0;
                 }
             });
 
@@ -137,7 +185,13 @@ public class MainActivity extends Activity {
                 Log.d("ScanResult", scanResult.toString());
                 addTableRow(scanResult);
             }
-            mainText.setText("");
+            displayBestChannels();
+            for(int i=0; i<14; i++) {
+                Log.d("2GHz Channel " + (i + 1), Integer.toString(twoGhzChannels[i]));
+            }
+            for(int i=0; i<fiveGhzChannels.size(); i++) {
+                Log.d("5 GHz" + fiveGhzChannels.keyAt(i), Integer.toString(fiveGhzChannels.get(i)));
+            }
         }
 
     }
