@@ -11,7 +11,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
 import android.net.wifi.ScanResult;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -100,9 +102,36 @@ public class MainActivity extends Activity {
         tableRow.addView(tempTextView);
         table.addView(tableRow);
     }
+    private void getCurrentSSID(Context context) {
+        StringBuilder CurrentSSID = new StringBuilder();
+        TableRow tableRow = new TableRow(this);
+        TextView tempTextView = new TextView(this);
 
     public int convertFrequencyToChannel(int freq) {
         int channel = -1;
+        try {
+            WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+
+            WifiInfo info = wifi.getConnectionInfo();
+
+            double level = info.getRssi();
+            double freq = info.getFrequency();
+            CurrentSSID.append("Your SSID: " + info.getSSID() + "\n");
+            CurrentSSID.append("Frequency: " + info.getFrequency() + "\n");
+            CurrentSSID.append("Level: " + info.getRssi() + "dBm\n");
+            CurrentSSID.append("Channel: " + convertFrequencyToChannel(info.getFrequency()) + "\n");
+            CurrentSSID.append("Distance: " + calculateDistance(level, freq) + "\n");
+            tempTextView.setText(CurrentSSID);
+            tableRow.addView(tempTextView);
+            Resources resource = context.getResources();
+            tableRow.setBackgroundColor(resource.getColor(R.color.blue));
+            table.addView(tableRow);
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        }
+    }
+    public static int convertFrequencyToChannel(int freq) {
         if (freq >= 2412 && freq <= 2484) {
             channel = (freq - 2412) / 5 + 1;
             twoGhzChannels[channel - 1]++;
@@ -180,7 +209,7 @@ public class MainActivity extends Activity {
                     return lhsDistance < rhsDistance ? -1 : (lhsDistance < rhsDistance) ? 1 : 0;
                 }
             });
-
+            getCurrentSSID(c);
             for (ScanResult scanResult : wifiList) {
                 Log.d("ScanResult", scanResult.toString());
                 addTableRow(scanResult);
