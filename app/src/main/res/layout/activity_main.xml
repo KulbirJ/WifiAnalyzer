@@ -33,8 +33,7 @@
                 android:layout_width="fill_parent"
                 android:layout_height="800px"
                 android:layout_marginTop="10px"
-                android:layout_marginLeft="10px"
-                android:layout_marginRight="10px"
+                android:paddingRight="10px"
                 androidPlot.title="2GHz Channels"/>
         </LinearLayout>
     </ScrollView>

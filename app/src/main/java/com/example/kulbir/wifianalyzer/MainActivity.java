@@ -1,5 +1,6 @@
 package com.example.kulbir.wifianalyzer;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -60,6 +61,12 @@ public class MainActivity extends Activity {
 
         twoGhzGraph.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 1);
         twoGhzGraph.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 10);
+        twoGhzGraph.setDomainValueFormat(new DecimalFormat("#"));
+        twoGhzGraph.setRangeValueFormat(new DecimalFormat("###"));
+
+        twoGhzGraph.getGraphWidget().setMarginBottom(75);
+        twoGhzGraph.getGraphWidget().setMarginLeft(90);
+        twoGhzGraph.getGraphWidget().setPaddingRight(20);
 
         twoGhzGraph.setUserRangeOrigin(0);
         twoGhzGraph.setRangeBoundaries(0, BoundaryMode.AUTO, 0, BoundaryMode.AUTO);
@@ -122,10 +129,22 @@ public class MainActivity extends Activity {
         sb.append("Channel: " + channel + "\n");
         sb.append("Distance: " + calculateDistance(level, freq) + "\n");
 
+        if(channel <= 14) {
+            addChannelToTwoGhzGraph(channel, level, ssid);
+        }
+
+        tempTextView.setText(sb);
+
+        tableRow.addView(tempTextView);
+        table.addView(tableRow);
+    }
+
+    public void addChannelToTwoGhzGraph(int channel, double level, String ssid) {
         Number[] x = {channel - 1, channel, channel + 1};
         Number[] y = {-100, level, -100};
 
         XYSeries data = new SimpleXYSeries(Arrays.asList(x), Arrays.asList(y), ssid);
+
 
         int color = getAndIncreaseColor();
 
@@ -139,11 +158,6 @@ public class MainActivity extends Activity {
                 new CatmullRomInterpolator.Params(20, CatmullRomInterpolator.Type.Centripetal));
 
         twoGhzGraph.addSeries(data, format);
-
-        tempTextView.setText(sb);
-
-        tableRow.addView(tempTextView);
-        table.addView(tableRow);
     }
 
     public int convertFrequencyToChannel(int freq) {
