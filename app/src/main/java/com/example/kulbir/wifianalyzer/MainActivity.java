@@ -202,8 +202,8 @@ public class MainActivity extends Activity {
                     bestFiveGhzChannel = i;
                 }
             }
-            mainText.setText("5GHz: " + Integer.toString(fiveGhzChannels.keyAt(bestFiveGhzChannel))
-                    + "   2GHz: " + Integer.toString(bestTwoGhzChannel + 1));
+            mainText.setText("Set 5GHz to: " + Integer.toString(fiveGhzChannels.keyAt(bestFiveGhzChannel))
+                    + "  Set 2GHz to: " + Integer.toString(bestTwoGhzChannel + 1));
         }
     }
 
