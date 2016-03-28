@@ -1,7 +1,6 @@
 package com.example.kulbir.wifianalyzer;
 
-
-
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -12,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -20,17 +20,21 @@ import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AbsListView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.series.BarGraphSeries;
-import com.jjoe64.graphview.series.DataPoint;
-import com.jjoe64.graphview.series.LineGraphSeries;
-import com.jjoe64.graphview.series.PointsGraphSeries;
+import com.androidplot.xy.BoundaryMode;
+import com.androidplot.xy.CatmullRomInterpolator;
+import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.PointLabelFormatter;
+import com.androidplot.xy.SimpleXYSeries;
+import com.androidplot.xy.XYPlot;
+import com.androidplot.xy.XYSeries;
+import com.androidplot.xy.XYStepMode;
 
 public class MainActivity extends Activity {
     TextView mainText;
@@ -38,8 +42,8 @@ public class MainActivity extends Activity {
     WifiManager mainWifi;
     WifiReceiver receiverWifi;
     List<ScanResult> wifiList;
-    GraphView twoGhzGraph;
-    StringBuilder sb = new StringBuilder();
+    private XYPlot twoGhzGraph;
+    private int lastColor = 0;
 
     int[] twoGhzChannels = new int[14];
     SparseIntArray fiveGhzChannels;
@@ -51,7 +55,17 @@ public class MainActivity extends Activity {
         mainText = (TextView) findViewById(R.id.listview);
         mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         table = (TableLayout) findViewById(R.id.table);
-        twoGhzGraph = (GraphView) findViewById(R.id.graph);
+
+        twoGhzGraph = (XYPlot) findViewById(R.id.twoGhzGraph);
+
+        twoGhzGraph.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 1);
+        twoGhzGraph.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 10);
+
+        twoGhzGraph.setUserRangeOrigin(0);
+        twoGhzGraph.setRangeBoundaries(0, BoundaryMode.AUTO, 0, BoundaryMode.AUTO);
+
+        twoGhzGraph.setVisibility(View.INVISIBLE);
+
 
         if (mainWifi.isWifiEnabled() == false)
         {
@@ -100,21 +114,31 @@ public class MainActivity extends Activity {
         double level = scanResult.level;
         double freq = scanResult.frequency;
         int channel = convertFrequencyToChannel(scanResult.frequency);
+        String ssid = scanResult.SSID;
 
-        sb.append("SSID: " + scanResult.SSID + "\n");
+        sb.append("SSID: " + ssid + "\n");
         sb.append("Frequency: " + freq + "\n");
         sb.append("Level: " + level + "dBm\n");
         sb.append("Channel: " + channel + "\n");
         sb.append("Distance: " + calculateDistance(level, freq) + "\n");
 
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(new DataPoint[] {
-                new DataPoint(channel - 2, -100),
-                new DataPoint(channel - 1, (-100 + level)/2.0),
-                new DataPoint(channel, level),
-                new DataPoint(channel + 1, (-100 + level)/2.0),
-                new DataPoint(channel + 2, -100)
-        });
-        twoGhzGraph.addSeries(series);
+        Number[] x = {channel - 1, channel, channel + 1};
+        Number[] y = {-100, level, -100};
+
+        XYSeries data = new SimpleXYSeries(Arrays.asList(x), Arrays.asList(y), ssid);
+
+        int color = getAndIncreaseColor();
+
+        LineAndPointFormatter format = new LineAndPointFormatter(
+                color,
+                null,                                   // point color
+                color,                                   // fill color (none)
+                null);
+
+        format.setInterpolationParams(
+                new CatmullRomInterpolator.Params(20, CatmullRomInterpolator.Type.Centripetal));
+
+        twoGhzGraph.addSeries(data, format);
 
         tempTextView.setText(sb);
 
@@ -167,13 +191,13 @@ public class MainActivity extends Activity {
         }
     }
 
-    public double calculateDistance(double levelInDb, double freqInMHz)    {
+    public double calculateDistance(double levelInDb, double freqInMHz) {
         double exp = (27.55 - (20 * Math.log10(freqInMHz)) + Math.abs(levelInDb)) / 20.0;
         return Math.pow(10.0, exp);
     }
 
     public void resetTwoGhzChannelCount() {
-        for(int i=0; i<14; i++) {
+        for (int i = 0; i < 14; i++) {
             twoGhzChannels[i] = 0;
         }
     }
@@ -214,7 +238,9 @@ public class MainActivity extends Activity {
         // This method call when number of wifi connections changed
         public void onReceive(Context c, Intent intent) {
             table.removeAllViews();
-            twoGhzGraph.removeAllSeries();
+            twoGhzGraph.getSeriesRegistry().clear();
+            twoGhzGraph.setVisibility(View.INVISIBLE);
+
             resetTwoGhzChannelCount();
             resetFiveGhzChannelCount();
 
@@ -238,7 +264,10 @@ public class MainActivity extends Activity {
                 addTableRow(scanResult);
             }
 
+            twoGhzGraph.redraw();
+
             displayBestChannels();
+            twoGhzGraph.setVisibility(View.VISIBLE);
 
             for(int i=0; i<14; i++) {
                 Log.d("2GHz Channel " + (i + 1), Integer.toString(twoGhzChannels[i]));
@@ -249,4 +278,10 @@ public class MainActivity extends Activity {
         }
 
     }
+
+    public int getAndIncreaseColor() {
+        lastColor = (lastColor + 50) % 255;
+        return Color.rgb(lastColor/2, lastColor/3, lastColor);
+    }
+
 }
