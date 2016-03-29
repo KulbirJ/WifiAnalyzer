@@ -32,6 +32,7 @@ import com.androidplot.xy.BoundaryMode;
 import com.androidplot.xy.CatmullRomInterpolator;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.PointLabelFormatter;
+import com.androidplot.xy.PointLabeler;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
@@ -58,6 +59,7 @@ public class MainActivity extends Activity {
         table = (TableLayout) findViewById(R.id.table);
 
         twoGhzGraph = (XYPlot) findViewById(R.id.twoGhzGraph);
+        twoGhzGraph.getLayoutManager().remove(twoGhzGraph.getLegendWidget());
 
         twoGhzGraph.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 1);
         twoGhzGraph.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 10);
@@ -139,12 +141,22 @@ public class MainActivity extends Activity {
         table.addView(tableRow);
     }
 
-    public void addChannelToTwoGhzGraph(int channel, double level, String ssid) {
+    public void addChannelToTwoGhzGraph(int channel, double level, final String ssid) {
         Number[] x = {channel - 1, channel, channel + 1};
         Number[] y = {-100, level, -100};
 
         XYSeries data = new SimpleXYSeries(Arrays.asList(x), Arrays.asList(y), ssid);
 
+        PointLabeler labeler = new PointLabeler() {
+            @Override
+            public String getLabel(XYSeries series, int index) {
+                if(index == 1) {
+                    return ssid;
+                } else {
+                    return "";
+                }
+            }
+        };
 
         int color = getAndIncreaseColor();
 
@@ -152,10 +164,12 @@ public class MainActivity extends Activity {
                 color,
                 null,                                   // point color
                 color,                                   // fill color (none)
-                null);
+                new PointLabelFormatter(Color.WHITE));
 
         format.setInterpolationParams(
                 new CatmullRomInterpolator.Params(20, CatmullRomInterpolator.Type.Centripetal));
+
+        format.setPointLabeler(labeler);
 
         twoGhzGraph.addSeries(data, format);
     }
@@ -236,7 +250,7 @@ public class MainActivity extends Activity {
         } else {
             bestFiveGhzChannel = 0;
             for (int i = 1; i < fiveGhzChannels.size(); i++) {
-                if (fiveGhzChannels.get(bestFiveGhzChannel) > fiveGhzChannels.get(i)) {
+                if (fiveGhzChannels.valueAt(bestFiveGhzChannel) > fiveGhzChannels.valueAt(i)) {
                     bestFiveGhzChannel = i;
                 }
             }
@@ -287,7 +301,7 @@ public class MainActivity extends Activity {
                 Log.d("2GHz Channel " + (i + 1), Integer.toString(twoGhzChannels[i]));
             }
             for(int i=0; i<fiveGhzChannels.size(); i++) {
-                Log.d("5 GHz" + fiveGhzChannels.keyAt(i), Integer.toString(fiveGhzChannels.get(i)));
+                Log.d("5 GHz Channel " + fiveGhzChannels.keyAt(i), Integer.toString(fiveGhzChannels.valueAt(i)));
             }
         }
 
@@ -297,5 +311,4 @@ public class MainActivity extends Activity {
         lastColor = (lastColor + 50) % 255;
         return Color.rgb(lastColor/2, lastColor/3, lastColor);
     }
-
 }
