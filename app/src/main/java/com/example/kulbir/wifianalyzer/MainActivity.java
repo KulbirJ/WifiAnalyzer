@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -46,6 +47,7 @@ public class MainActivity extends Activity {
     List<ScanResult> wifiList;
     private XYPlot twoGhzGraph;
     private int lastColor = 0;
+    Random rand = new Random();
 
     int[] twoGhzChannels = new int[14];
     SparseIntArray fiveGhzChannels;
@@ -160,7 +162,7 @@ public class MainActivity extends Activity {
             }
         };
 
-        int color = getAndIncreaseColor();
+        int color = getRandomColour();
 
         LineAndPointFormatter format = new LineAndPointFormatter(
                 color,
@@ -309,8 +311,7 @@ public class MainActivity extends Activity {
 
     }
 
-    public int getAndIncreaseColor() {
-        lastColor = (lastColor + 50) % 255;
-        return Color.rgb(lastColor/2, lastColor/3, lastColor);
+    public int getRandomColour() {
+        return Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
     }
 }
