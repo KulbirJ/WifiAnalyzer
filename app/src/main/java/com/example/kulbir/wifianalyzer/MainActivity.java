@@ -69,9 +69,11 @@ public class MainActivity extends Activity {
         twoGhzGraph.getGraphWidget().setMarginBottom(75);
         twoGhzGraph.getGraphWidget().setMarginLeft(90);
         twoGhzGraph.getGraphWidget().setPaddingRight(20);
+        twoGhzGraph.getGraphWidget().setPaddingTop(40);
 
         twoGhzGraph.setUserRangeOrigin(0);
-        twoGhzGraph.setRangeBoundaries(0, BoundaryMode.AUTO, 0, BoundaryMode.AUTO);
+        twoGhzGraph.setRangeBoundaries(-100, BoundaryMode.FIXED, -20, BoundaryMode.FIXED);
+        twoGhzGraph.setDomainBoundaries(-1, BoundaryMode.FIXED, 14, BoundaryMode.FIXED);
 
         twoGhzGraph.setVisibility(View.INVISIBLE);
 
