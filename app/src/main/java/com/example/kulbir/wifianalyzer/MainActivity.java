@@ -18,6 +18,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Menu;
@@ -39,7 +40,7 @@ import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYSeries;
 import com.androidplot.xy.XYStepMode;
 
-public class MainActivity extends Activity {
+public class MainActivity extends ActionBarActivity {
     TextView mainText;
     TableLayout table;
     WifiManager mainWifi;
@@ -94,15 +95,34 @@ public class MainActivity extends Activity {
         mainText.setText("Starting Scan...");
     }
 
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(0, 0, 0, "Refresh");
-        return super.onCreateOptionsMenu(menu);
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
     }
 
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        mainWifi.startScan();
-        mainText.setText("Starting Scan");
-        return super.onMenuItemSelected(featureId, item);
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.twoghz) {
+            startActivity(new Intent(this, TwoGhzGraphActivity.class));
+
+            return true;
+        }else if (id == R.id.fiveghz) {
+            startActivity(new Intent(this, FiveGhzGraphActivity.class));
+
+            return true;
+        }
+
+
+        return super.onOptionsItemSelected(item);
     }
 
     protected void onPause() {

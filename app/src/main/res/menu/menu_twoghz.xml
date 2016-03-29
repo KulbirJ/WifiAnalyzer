@@ -1,12 +1,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.example.kulbir.wifianalyzer.MainActivity">
-    <item android:id="@+id/twoghz"
-        android:title="TwoGhzGraph"/>
+    tools:context="com.example.kulbir.wifianalyzer.TwoGhzGraphActivity">
+    <item android:id="@+id/home"
+        android:title="Home"/>
 
     <item android:id="@+id/fiveghz"
         android:title="FiveGhz" />
-
-
 </menu>
