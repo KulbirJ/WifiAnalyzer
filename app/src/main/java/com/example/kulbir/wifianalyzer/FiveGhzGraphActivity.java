@@ -10,6 +10,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.androidplot.xy.BoundaryMode;
@@ -27,37 +28,37 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-public class TwoGhzGraphActivity extends Activity {
+public class FiveGhzGraphActivity extends Activity {
 
     WifiManager mainWifi;
     WifiReceiver receiverWifi;
     List<ScanResult> wifiList;
-    private XYPlot twoGhzGraph;
+    private XYPlot fiveGhzGraph;
     Random rand = new Random();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_two_ghz_graph);
+        setContentView(R.layout.activity_five_ghz_graph);
 
         mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
-        twoGhzGraph = (XYPlot) findViewById(R.id.twoGhzGraph);
-        twoGhzGraph.getLayoutManager().remove(twoGhzGraph.getLegendWidget());
+        fiveGhzGraph = (XYPlot) findViewById(R.id.twoGhzGraph);
+        fiveGhzGraph.getLayoutManager().remove(fiveGhzGraph.getLegendWidget());
 
-        twoGhzGraph.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 1);
-        twoGhzGraph.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 10);
-        twoGhzGraph.setDomainValueFormat(new DecimalFormat("#"));
-        twoGhzGraph.setRangeValueFormat(new DecimalFormat("###"));
+        fiveGhzGraph.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 2);
+        fiveGhzGraph.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 10);
+        fiveGhzGraph.setDomainValueFormat(new DecimalFormat("#"));
+        fiveGhzGraph.setRangeValueFormat(new DecimalFormat("###"));
 
-        twoGhzGraph.getGraphWidget().setMarginBottom(75);
-        twoGhzGraph.getGraphWidget().setMarginLeft(90);
-        twoGhzGraph.getGraphWidget().setPaddingRight(20);
-        twoGhzGraph.getGraphWidget().setPaddingTop(40);
+        fiveGhzGraph.getGraphWidget().setMarginBottom(75);
+        fiveGhzGraph.getGraphWidget().setMarginLeft(90);
+        fiveGhzGraph.getGraphWidget().setPaddingRight(20);
+        fiveGhzGraph.getGraphWidget().setPaddingTop(40);
 
-        twoGhzGraph.setUserRangeOrigin(0);
-        twoGhzGraph.setRangeBoundaries(-100, BoundaryMode.FIXED, -20, BoundaryMode.FIXED);
-        twoGhzGraph.setDomainBoundaries(-1, BoundaryMode.FIXED, 14, BoundaryMode.FIXED);
+        fiveGhzGraph.setUserRangeOrigin(0);
+        fiveGhzGraph.setRangeBoundaries(-100, BoundaryMode.FIXED, -20, BoundaryMode.FIXED);
+        fiveGhzGraph.setDomainBoundaries(32, BoundaryMode.FIXED, 52, BoundaryMode.FIXED);
 
         if (mainWifi.isWifiEnabled() == false)
         {
@@ -72,14 +73,14 @@ public class TwoGhzGraphActivity extends Activity {
         mainWifi.startScan();
     }
 
-    protected void onPause() {
-        unregisterReceiver(receiverWifi);
-        super.onPause();
-    }
-
     protected void onResume() {
         registerReceiver(receiverWifi, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         super.onResume();
+    }
+
+    protected void onPause() {
+        unregisterReceiver(receiverWifi);
+        super.onPause();
     }
 
     private void addResultToGraph(int channel, double level, final String ssid) {
@@ -112,7 +113,7 @@ public class TwoGhzGraphActivity extends Activity {
 
         format.setPointLabeler(labeler);
 
-        twoGhzGraph.addSeries(data, format);
+        fiveGhzGraph.addSeries(data, format);
     }
 
     public int getRandomColour() {
@@ -121,8 +122,8 @@ public class TwoGhzGraphActivity extends Activity {
 
     public int convertFrequencyToChannel(int freq) {
         int channel = -1;
-        if (freq >= 2412 && freq <= 2484) {
-            channel = (freq - 2412) / 5 + 1;
+        if (freq >= 5170 && freq <= 5825) {
+            channel = (freq - 5170) / 5 + 34;
         }
         return channel;
     }
@@ -131,19 +132,20 @@ public class TwoGhzGraphActivity extends Activity {
 
         // This method call when number of wifi connections changed
         public void onReceive(Context c, Intent intent) {
-            twoGhzGraph.getSeriesRegistry().clear();
+            fiveGhzGraph.getSeriesRegistry().clear();
             int channel;
 
             wifiList = mainWifi.getScanResults();
 
             for (ScanResult scanResult : wifiList) {
                 channel = convertFrequencyToChannel(scanResult.frequency);
+                Log.d("Channel: " + channel, scanResult.SSID);
                 if(channel != -1) {
                     addResultToGraph(channel, scanResult.level, scanResult.SSID);
                 }
             }
 
-            twoGhzGraph.redraw();
+            fiveGhzGraph.redraw();
         }
     }
 }

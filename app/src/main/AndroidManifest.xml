@@ -22,7 +22,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".TwoGhzGraphActivity"></activity>
+        <activity android:name=".TwoGhzGraphActivity" />
+        <activity android:name=".FiveGhzGraphActivity"></activity>
     </application>
 
 </manifest>
