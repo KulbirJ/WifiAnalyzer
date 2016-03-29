@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
+import android.graphics.PointF;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.support.v7.app.ActionBarActivity;
@@ -14,6 +15,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Toast;
 
 import com.androidplot.xy.BoundaryMode;
@@ -30,14 +33,19 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
-public class FiveGhzGraphActivity extends ActionBarActivity {
+public class FiveGhzGraphActivity extends ActionBarActivity implements View.OnTouchListener {
 
     WifiManager mainWifi;
     WifiReceiver receiverWifi;
     List<ScanResult> wifiList;
     private XYPlot fiveGhzGraph;
     Random rand = new Random();
+
+    private PointF minXY;
+    private PointF maxXY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +55,7 @@ public class FiveGhzGraphActivity extends ActionBarActivity {
         mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
         fiveGhzGraph = (XYPlot) findViewById(R.id.twoGhzGraph);
+        fiveGhzGraph.setOnTouchListener(this);
         fiveGhzGraph.getLayoutManager().remove(fiveGhzGraph.getLegendWidget());
 
         fiveGhzGraph.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 2);
@@ -61,7 +70,7 @@ public class FiveGhzGraphActivity extends ActionBarActivity {
 
         fiveGhzGraph.setUserRangeOrigin(0);
         fiveGhzGraph.setRangeBoundaries(-100, BoundaryMode.FIXED, -20, BoundaryMode.FIXED);
-        fiveGhzGraph.setDomainBoundaries(32, BoundaryMode.FIXED, 52, BoundaryMode.FIXED);
+        fiveGhzGraph.setDomainBoundaries(32, BoundaryMode.FIXED, 47, BoundaryMode.FIXED);
 
         if (mainWifi.isWifiEnabled() == false)
         {
@@ -71,6 +80,11 @@ public class FiveGhzGraphActivity extends ActionBarActivity {
 
             mainWifi.setWifiEnabled(true);
         }
+
+        fiveGhzGraph.calculateMinMaxVals();
+        minXY=new PointF(fiveGhzGraph.getCalculatedMinX().floatValue(),fiveGhzGraph.getCalculatedMinY().floatValue());
+        maxXY=new PointF(fiveGhzGraph.getCalculatedMaxX().floatValue(),fiveGhzGraph.getCalculatedMaxY().floatValue());
+
         receiverWifi = new WifiReceiver();
         registerReceiver(receiverWifi, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         mainWifi.startScan();
@@ -178,4 +192,72 @@ public class FiveGhzGraphActivity extends ActionBarActivity {
             fiveGhzGraph.redraw();
         }
     }
+
+
+    // Definition of the touch states
+    static final int NONE = 0;
+    static final int ONE_FINGER_DRAG = 1;
+    static final int TWO_FINGERS_DRAG = 2;
+    int mode = NONE;
+
+    PointF firstFinger;
+    float lastScrolling;
+    float distBetweenFingers;
+    float lastZooming;
+
+    @Override
+    public boolean onTouch(View arg0, MotionEvent event) {
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_DOWN: // Start gesture
+                firstFinger = new PointF(event.getX(), event.getY());
+                mode = ONE_FINGER_DRAG;
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+                Log.d("ACTION_POINTER_UP","Here");
+                //When the gesture ends, a thread is created to give inertia to the scrolling and zoom
+            case MotionEvent.ACTION_POINTER_DOWN: // second finger
+                distBetweenFingers = spacing(event);
+                // the distance check is done to avoid false alarms
+                if (distBetweenFingers > 5f) {
+                    mode = TWO_FINGERS_DRAG;
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (mode == ONE_FINGER_DRAG) {
+                    PointF oldFirstFinger=firstFinger;
+                    firstFinger=new PointF(event.getX(), event.getY());
+                    lastScrolling=oldFirstFinger.x-firstFinger.x;
+                    scroll(lastScrolling);
+                    fiveGhzGraph.setDomainBoundaries(minXY.x, maxXY.x, BoundaryMode.FIXED);
+                    fiveGhzGraph.redraw();
+                } else if (mode == TWO_FINGERS_DRAG) {
+                    float oldDist =distBetweenFingers;
+                    distBetweenFingers=spacing(event);
+                    lastZooming=oldDist/distBetweenFingers;
+                    fiveGhzGraph.setDomainBoundaries(minXY.x, maxXY.x, BoundaryMode.FIXED);
+                    fiveGhzGraph.redraw();
+                }
+                break;
+        }
+        return true;
+    }
+
+    private void scroll(float pan) {
+        float domainSpan = maxXY.x	- minXY.x;
+        float step = domainSpan / fiveGhzGraph.getWidth();
+        float offset = pan * step;
+        minXY.x+= 2*offset;
+        maxXY.x+= 2*offset;
+    }
+
+    private float spacing(MotionEvent event) {
+        if(event.getPointerCount() <=1) {
+            return 0;
+        }
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+        return (float)Math.sqrt(x * x + y * y);
+    }
+
 }
