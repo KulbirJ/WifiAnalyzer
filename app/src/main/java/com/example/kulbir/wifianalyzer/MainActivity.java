@@ -46,9 +46,6 @@ public class MainActivity extends ActionBarActivity {
     WifiManager mainWifi;
     WifiReceiver receiverWifi;
     List<ScanResult> wifiList;
-    private XYPlot twoGhzGraph;
-    private int lastColor = 0;
-    Random rand = new Random();
 
     int[] twoGhzChannels = new int[14];
     SparseIntArray fiveGhzChannels;
@@ -60,26 +57,6 @@ public class MainActivity extends ActionBarActivity {
         mainText = (TextView) findViewById(R.id.listview);
         mainWifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         table = (TableLayout) findViewById(R.id.table);
-
-        twoGhzGraph = (XYPlot) findViewById(R.id.twoGhzGraph);
-        twoGhzGraph.getLayoutManager().remove(twoGhzGraph.getLegendWidget());
-
-        twoGhzGraph.setDomainStep(XYStepMode.INCREMENT_BY_VAL, 1);
-        twoGhzGraph.setRangeStep(XYStepMode.INCREMENT_BY_VAL, 10);
-        twoGhzGraph.setDomainValueFormat(new DecimalFormat("#"));
-        twoGhzGraph.setRangeValueFormat(new DecimalFormat("###"));
-
-        twoGhzGraph.getGraphWidget().setMarginBottom(75);
-        twoGhzGraph.getGraphWidget().setMarginLeft(90);
-        twoGhzGraph.getGraphWidget().setPaddingRight(20);
-        twoGhzGraph.getGraphWidget().setPaddingTop(40);
-
-        twoGhzGraph.setUserRangeOrigin(0);
-        twoGhzGraph.setRangeBoundaries(-100, BoundaryMode.FIXED, -20, BoundaryMode.FIXED);
-        twoGhzGraph.setDomainBoundaries(-1, BoundaryMode.FIXED, 14, BoundaryMode.FIXED);
-
-        twoGhzGraph.setVisibility(View.INVISIBLE);
-
 
         if (mainWifi.isWifiEnabled() == false)
         {
@@ -155,47 +132,10 @@ public class MainActivity extends ActionBarActivity {
         sb.append("Channel: " + channel + "\n");
         sb.append("Distance: " + calculateDistance(level, freq) + "\n");
 
-        if(channel <= 14) {
-            addChannelToTwoGhzGraph(channel, level, ssid);
-        }
-
         tempTextView.setText(sb);
 
         tableRow.addView(tempTextView);
         table.addView(tableRow);
-    }
-
-    public void addChannelToTwoGhzGraph(int channel, double level, final String ssid) {
-        Number[] x = {channel - 1, channel, channel + 1};
-        Number[] y = {-100, level, -100};
-
-        XYSeries data = new SimpleXYSeries(Arrays.asList(x), Arrays.asList(y), ssid);
-
-        PointLabeler labeler = new PointLabeler() {
-            @Override
-            public String getLabel(XYSeries series, int index) {
-                if(index == 1) {
-                    return ssid;
-                } else {
-                    return "";
-                }
-            }
-        };
-
-        int color = getRandomColour();
-
-        LineAndPointFormatter format = new LineAndPointFormatter(
-                color,
-                null,                                   // point color
-                color,                                   // fill color (none)
-                new PointLabelFormatter(Color.WHITE));
-
-        format.setInterpolationParams(
-                new CatmullRomInterpolator.Params(20, CatmullRomInterpolator.Type.Centripetal));
-
-        format.setPointLabeler(labeler);
-
-        twoGhzGraph.addSeries(data, format);
     }
 
     public int convertFrequencyToChannel(int freq) {
@@ -290,8 +230,6 @@ public class MainActivity extends ActionBarActivity {
         // This method call when number of wifi connections changed
         public void onReceive(Context c, Intent intent) {
             table.removeAllViews();
-            twoGhzGraph.getSeriesRegistry().clear();
-            twoGhzGraph.setVisibility(View.INVISIBLE);
 
             resetTwoGhzChannelCount();
             resetFiveGhzChannelCount();
@@ -316,10 +254,7 @@ public class MainActivity extends ActionBarActivity {
                 addTableRow(scanResult);
             }
 
-            twoGhzGraph.redraw();
-
             displayBestChannels();
-            twoGhzGraph.setVisibility(View.VISIBLE);
 
             for(int i=0; i<14; i++) {
                 Log.d("2GHz Channel " + (i + 1), Integer.toString(twoGhzChannels[i]));
@@ -331,7 +266,4 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
-    public int getRandomColour() {
-        return Color.rgb(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
-    }
 }
